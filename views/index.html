@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="/css/index.css" rel="stylesheet">
+        <title>Virtual Machin Controll Panel</title>
+    </head>
+    <body>
+        <div class="my-contextmenu" id="router-contextmenu">
+            <ul>
+                <li>Ethernet 0/0</li>
+                <li>Ethernet 0/1</li>
+                <li>Ethernet 0/2</li>
+                <li>Ethernet 0/3</li>
+                <li>Ethernet 0/4</li>
+            </ul>
+        </div>
+
+        <div id="topmenu">
+            <div id="title">
+                <img src="/image/icon.png" height="50">
+                Virtual Machin Controll Panel
+            </div>
+            <ul>
+                <li><a href="#">Reset</a></li>
+                <li><a href="#">Logout</a></li>
+            </ul>
+        </div>
+        <div class="container">
+            <div id="sidemenu" onContextmenu="return false;">
+                <ul>
+                    <li draggable="true" id="router">
+                        <img src="/image/router.png">
+                    </li>
+                    <li draggable="true" id="switch">
+                        <img src="/image/switch.png">
+                    </li>
+                    <li draggable="true" id="vps">
+                        <img src="/image/vps.png">
+                    </li>
+                </ul>
+            </div>
+            <div id="uipanel" onContextmenu="return false;">
+                <canvas id="canvasui" width="1000" height="550">
+
+                </canvas>
+            </div>
+        </div>
+        <div id="controlpanel">
+            <div id="tabmenu">
+            </div>
+        </div>
+        <script>
+            //start drag from sidemenu
+            function handleDragStart(e){
+                e.dataTransfer.setData('machin', this.id);
+                dropArea.style.opacity = 0.3;
+            }
+
+            //end drag from sidemenu
+            function handleDragEnd(e){
+                dropArea.style.opacity = 1;
+            }
+
+            //when drop item on canvas
+            function handleDrop(e){
+                let img = new Image();
+                let machin = e.dataTransfer.getData('machin');
+                if (machin == "router")
+                    img.src = ROUTER_SRC;
+                else if (machin == "switch")
+                    img.src = SWITCH_SRC;
+                else if (machin == "vps")
+                    img.src = VPS_SRC;
+                let x = e.clientX - canvas.getBoundingClientRect().left;
+                let y = e.clientY - canvas.getBoundingClientRect().top;
+                context.drawImage(img, x, y);
+                inUseMachines.push(new Machin(img, 1, x, y));
+            }
+            
+            const ROUTER_SRC = "/image/router.png";
+            const SWITCH_SRC = "/image/switch.png";
+            const VPS_SRC = "/image/vps.png";
+
+            var cols = document.querySelectorAll('#sidemenu ul li');
+            [].forEach.call(cols, function(col) {
+                col.addEventListener('dragstart', handleDragStart, false);
+                col.addEventListener('dragend', handleDragEnd, false);
+            });
+            var dropArea = document.getElementById("uipanel");
+            dropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            }, false);
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+
+            
+            function handleCanvasOnDown(e){
+                let offsetX = canvas.getBoundingClientRect().left;
+                let offsetY = canvas.getBoundingClientRect().top;
+                let x = e.clientX - offsetX;
+                let y = e.clientY - offsetY;
+                inUseMachines.forEach(function(machin){
+                    if (checkLoacationOverMachin(machin, x, y)){
+                        canvasDragging = true;
+                        relX = machin.x - x;
+                        relY = machin.y -y;
+                        moveMachin = machin;
+                    }
+                });
+
+            }
+
+            function handleCanvasOnMove(e){
+                if (canvasDragging){
+                    let offsetX = canvas.getBoundingClientRect().left;
+                    let offsetY = canvas.getBoundingClientRect().top;
+                    let x = e.clientX - offsetX;
+                    let y = e.clientY - offsetY;
+                    moveMachin.x = x + relX;
+                    moveMachin.y = y + relY;
+                    canvasReDraw();
+                }
+            }
+
+            function handleCanvasOnUp(e){
+                canvasDragging = false;
+            }
+
+            function handleCanvasDoubleClick(e){
+                console.log('double click');
+            }
+
+            function checkLoacationOverMachin(machin, x, y){
+                if (machin.x < x && (machin.img.naturalWidth + machin.x) > x && machin.y < y && (machin.img.naturalHeight + machin.y) > y)
+                    return true;
+                else
+                return false;
+            }
+
+            function canvasReDraw(){
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                inUseMachines.forEach(function(machin){
+                    context.drawImage(machin.img, machin.x, machin.y);
+                });
+            }
+
+            const canvas = document.getElementById("canvasui");
+            let context = canvas.getContext('2d');
+            canvas.addEventListener('mousedown', handleCanvasOnDown, false);
+            canvas.addEventListener('mousemove', handleCanvasOnMove, false);
+            canvas.addEventListener('mouseup', handleCanvasOnUp, false);
+            canvas.addEventListener('dblclick', handleCanvasDoubleClick, false);
+            let canvasDragging = false;
+            let inUseMachines = []
+            let cables = []
+            let relX, relY;
+            let moveMachin;
+
+            let routerContextMenu = document.getElementById('router-contextmenu');
+            canvas.addEventListener('contextmenu', function(e){
+                let offsetX = canvas.getBoundingClientRect().left;
+                let offsetY = canvas.getBoundingClientRect().top;
+                let x = e.clientX - offsetX;
+                let y = e.clientY - offsetY;
+                inUseMachines.forEach(function(machin){
+                    if (checkLoacationOverMachin(machin, x, y)){
+                        routerContextMenu.style.left = (x + offsetX)+'px';
+                        routerContextMenu.style.top = (y + offsetY)+'px';
+                        routerContextMenu.classList.add('show');
+                        canvasDragging = false;
+                        return;
+                    }
+                });
+            }, false);
+            document.body.addEventListener('click',function(){
+                if(routerContextMenu.classList.contains('show')) {
+                routerContextMenu.classList.remove('show');
+                }
+            });
+
+
+            function Machin(img, id, x, y){
+                this.img = img;
+                this.id = id;
+                this.x = x;
+                this.y = y;
+            }
+
+            function addNewMachin(){
+
+            }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,104 @@
+body{
+    width:1108px;
+    margin: 0 auto;
+}
+
+.my-contextmenu {
+    display: none;
+    position: fixed;
+    width: 200px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 1px 1px 1px rgba(0,0,0,.2);
+    z-index: 1000;
+}
+.my-contextmenu.show {
+    display: block;
+}
+.my-contextmenu ul {
+    list-style: none;
+    padding: 10px 0;
+}
+.my-contextmenu ul li {
+    padding: 4px 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+.container {
+    display: flex;
+}
+
+#topmenu{
+    height: 50px;
+    display: flex;
+    justify-content: space-between;
+}
+
+#title{
+    font-size: 2em;
+}
+
+#title img{
+    vertical-align: middle;
+}
+
+#title h1{
+    display: inline;
+    margin: 0;
+}
+
+#topmenu ul{
+    list-style: none;
+    display: flex;
+    padding: 0;
+}
+
+#topmenu ul li{
+    padding-right: 1em;
+}
+
+#sidemenu{
+    width: 102px;
+    height: 550px;
+    border: solid 2px gray;
+}
+
+#sidemenu ul{
+    text-align: center;
+    list-style: none;
+    height: 70px;
+    margin: 0;
+    padding: 0;
+}
+
+#sidemenu ul li{
+    cursor: move;
+}
+
+#sidemenu ul li:hover{
+    background-color: #E6E6E6;
+}
+
+#uipanel{
+    width: 1000px;
+    height: 550px;
+    background-color: white;
+    border-top: solid 2px gray;
+    border-bottom: solid 2px gray;
+    border-right: solid 2px gray;
+}
+
+#controlpanel{
+    width: 1104px;
+    height: 500px;
+    border-bottom: solid 2px gray;
+    border-right: solid 2px gray;
+    border-left: solid 2px gray;
+}
+
+#tabmenu{
+    height: 38px;
+    border-bottom: solid 2px gray;
+}
+
