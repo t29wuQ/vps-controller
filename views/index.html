@@ -2,6 +2,7 @@
 <html>
     <head>
         <link href="/css/index.css" rel="stylesheet">
+        <script src="/socket.io/socket.io.js"></script>
         <title>Virtual Machin Controll Panel</title>
     </head>
     <body>
@@ -50,6 +51,8 @@
             </div>
         </div>
         <script>
+            let socket = io();
+
             //start drag from sidemenu
             function handleDragStart(e){
                 e.dataTransfer.setData('machin', this.id);
@@ -64,17 +67,18 @@
             //when drop item on canvas
             function handleDrop(e){
                 let img = new Image();
-                let machin = e.dataTransfer.getData('machin');
-                if (machin == "router")
+                let machine = e.dataTransfer.getData('machin');
+                if (machine == "router")
                     img.src = ROUTER_SRC;
-                else if (machin == "switch")
+                else if (machine == "switch")
                     img.src = SWITCH_SRC;
-                else if (machin == "vps")
+                else if (machine == "vps")
                     img.src = VPS_SRC;
                 let x = e.clientX - canvas.getBoundingClientRect().left;
                 let y = e.clientY - canvas.getBoundingClientRect().top;
                 context.drawImage(img, x, y);
                 inUseMachines.push(new Machin(img, 1, x, y));
+                socket.emit('addmachine', machine);
             }
             
             const ROUTER_SRC = "/image/router.png";
