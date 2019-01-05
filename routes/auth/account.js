@@ -5,11 +5,8 @@ const mongose = require('mongoose');
 const User = require('../../models/user');
 
 router.post('/signup', function(req, res){
-    console.log('catch reques');
     let userid = req.body.userid;
     let password = req.body.password;
-    console.log(userid);
-    console.log(password);
     User.find({"userid" : userid}, function(err, result){
         if (err)
             console.log(err);
@@ -28,5 +25,19 @@ router.post('/signup', function(req, res){
         }
     });
 });
+
+router.post('/signin', function(req, res){
+    let userid = req.body.userid;
+    let password = req.body.password;
+    User.find({"userid" : userid}, function(err, result){
+        if (err)
+            console.log(err);
+        if (result[0].password == password)
+            res.send('true');
+        else
+            res.send('Faild login');
+    });
+});
+
 
 module.exports = router;
