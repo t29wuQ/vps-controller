@@ -1,22 +1,45 @@
 const express = require('express');
 const app = express();
+const path = require('path');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
 const mongoose = require('mongoose');
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const indexRouter = require('./routes/index');
 const accountRouter = require('./routes/auth/account');
 
-app.use(bodyParser());
-
 app.use(express.static('public'));
 app.use(express.static('views'));
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engin', "ejs");
 
+app.use(bodyParser());
+app.use(cookieParser());
+app.use(session({
+    secret: 'userlogin',
+    resave: false,
+    saveUninitialized: false,
+    maxage: 1000 * 60 * 30,
+    cookie: null
+  }));
+
+const sessionCheck = function(req, res, next){
+    if (req.session.userid)
+        next()
+    else{
+        console.log('out');
+        res.redirect('/account/test');
+    }
+};
+
+app.use('/account', accountRouter);
+app.use('/', sessionCheck);
 app.use('/', indexRouter);
-app.use('/account', accountRouter)
 
 // ルート（http://localhost/）にアクセスしてきたときに「Hello」を返す
-app.get('/', (req, res) => res.sendFile('/views/index.html'));
+//app.get('/', (req, res) => res.sendFile('/views/index.html'));
 
 
 io.on('connection', function(socket){

@@ -39,5 +39,8 @@ router.post('/signin', function(req, res){
     });
 });
 
+router.get('/test', function(req, res){
+    res.render("login.ejs", {error : ""});
+});
 
 module.exports = router;
