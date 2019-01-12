@@ -4,6 +4,11 @@ const bodyParser = require('body-parser');
 const mongose = require('mongoose');
 const User = require('../../models/user');
 
+router.get('/', function(req, res){
+    res.render("account.ejs");
+});
+
+//登録処理
 router.post('/signup', function(req, res){
     let userid = req.body.userid;
     let password = req.body.password;
@@ -26,21 +31,20 @@ router.post('/signup', function(req, res){
     });
 });
 
+//ログイン
 router.post('/signin', function(req, res){
     let userid = req.body.userid;
     let password = req.body.password;
     User.find({"userid" : userid}, function(err, result){
         if (err)
             console.log(err);
-        if (result[0].password == password)
-            res.send('true');
+        if (result[0].password == password){
+            req.session.userid = userid;
+            res.redirect('../');
+        }
         else
-            res.send('Faild login');
+            res.redirect('/');
     });
-});
-
-router.get('/test', function(req, res){
-    res.render("login.ejs", {error : ""});
 });
 
 module.exports = router;
