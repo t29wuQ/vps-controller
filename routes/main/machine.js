@@ -3,41 +3,47 @@ const router = express.Router();
 const UserMachine = require('../../models/machine');
 const exec = require('child_process').exec;
 const execPath = require('path').resolve(__dirname, './exec.sh');
+const randomID = require('../../crypto/random_id');
 
 //ルータの追加
 router.post('/router/add', function(req, res){
-    exec(execPath + " 'ovs-vsctl add-br " + req.body.name + "'", function(error, stdout, stderr){
-        if (error)
-            console.log(error);
-        console.log("stdout" + stdout);
-        console.log("stderr" + stderr);
-        res.send('test');
-    });
-    // let userid = req.session.userid;
-    // let name = req.body.name;
-    // let type = "router";
-    // let x = req.body.x;
-    // let y = req.body.y;
-    // let machine = {id}
     
-    // UserMachine.find({"userid" : userid}, function(err, result){
-    //     if (err)
-    //         console.log(err);
-    //     exec("../exec.sh ovs-vsctl add-br " + name, function(error, stdout, stderr){
-    //         if (error)
-    //             console.log(error);
-    //         console.log("stdout" + stdout);
-    //         console.log("stderr" + stderr);
-    //     });
-        
-    //     usermachine.userid = userid;
-    //     usermachine.
-    //     user.save(function(err){
-    //         if (err)
-    //             console.log(err);
-    //         res.send("new created account");
-    //     });
-    // });
+    let userid = req.session.userid;
+    
+    UserMachine.find({"userid" : userid}, function(err, result){
+        if (err)
+            console.log(err);
+        console.log("get database");
+        console.log(result[0].machines.length);
+
+        let userMachine = result[0];
+        let name = userid + userMachine.machines.length;
+        let id = (String(userMachine.usernumber) + String(userMachine.machines.length) + "0000000000000000").slice(0, 16);
+        let type = "router";
+        let x = req.body.x;
+        let y = req.body.y;
+
+        exec(execPath + " 'ovs-vsctl add-br " + name + "'", function(error, stdout, stderr){
+            if (error)
+                console.log(error)
+            console.log("ovs-vsctl add-br " + name + " stdout: " + stdout);
+            console.log("ovs-vsctl add-br " + name + " stderr: " + stderr);
+            exec(execPath + " 'ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + "'", function(error, stdout, stderr){
+                if (error)
+                    console.log(error);
+                console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stdout: " + stdout);
+                console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stderr: " + stderr);
+                let router = { id : id, name : name, type : "router", x : x, y : y};
+                result[0].machines.push(router);
+                result[0].save(function(err){
+                    if (err)
+                        console.log(err);
+                    res.send("success");
+                });
+                
+            });
+        });
+    });
 });
 
 //ルータの削除
@@ -74,5 +80,19 @@ router.post('/veth/add', function(req, res){
 router.post('/veth/del', function(req, res){
 
 });
+
+const addMachine = function(name, id){
+    exec(execPath + " 'ovs-vsctl add-br " + name + "'", function(error, stdout, stderr){
+        if (error || stderr)
+            return -1;
+        console.log("stdout" + stdout);
+        exec(execPath + " 'ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id, function(error, stdout, stderr){
+            if (error || stderr)
+                return -1;
+            console.log("stdout" + stdout);
+            return 0;
+        });
+    });
+}
 
 module.exports = router;
