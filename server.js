@@ -9,6 +9,7 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const indexRouter = require('./routes/index');
 const accountRouter = require('./routes/auth/account');
+const machineRouter = require('./routes/main/machine')
 
 app.use(express.static('public'));
 app.use(express.static('views'));
@@ -30,13 +31,14 @@ const sessionCheck = function(req, res, next){
         next()
     else{
         console.log('out');
-        res.redirect('/account/test');
+        res.redirect('/account/');
     }
 };
 
 app.use('/account', accountRouter);
 app.use('/', sessionCheck);
 app.use('/', indexRouter);
+app.use('/machine', machineRouter);
 
 // ルート（http://localhost/）にアクセスしてきたときに「Hello」を返す
 //app.get('/', (req, res) => res.sendFile('/views/index.html'));
@@ -52,5 +54,5 @@ io.on('connection', function(socket){
 // ポート3000でサーバを立てる
 http.listen(3000, function(){
     console.log('server listening. Port:');
-    mongoose.connect('mongodb://mongodb/vpsapi');
+    mongoose.connect('mongodb://localhost:27017/vpsapi');
 });

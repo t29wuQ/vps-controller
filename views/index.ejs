@@ -3,7 +3,7 @@
     <head>
         <link href="/css/index.css" rel="stylesheet">
         <script src="/socket.io/socket.io.js"></script>
-        <title>Virtual Machin Controll Panel</title>
+        <title>Virtual Machine Controll Panel</title>
     </head>
     <body>
         <div class="my-contextmenu" id="router-contextmenu">
@@ -19,7 +19,7 @@
         <div id="topmenu">
             <div id="title">
                 <img src="/image/icon.png" height="50">
-                Virtual Machin Controll Panel
+                Virtual Machine Controll Panel
             </div>
             <ul>
                 <li><a href="#">Reset</a></li>
@@ -68,8 +68,19 @@
             function handleDrop(e){
                 let img = new Image();
                 let machine = e.dataTransfer.getData('machin');
-                if (machine == "router")
+                if (machine == "router"){
                     img.src = ROUTER_SRC;
+                    let prm = new URLSearchParams();
+                    prm.append("name", "ajaxtest");
+                    let req = new Request("/machine/router/add", {
+                        method: "post",
+                        body: prm
+                    });
+                    fetch(req)
+                    .then(response =>{
+                        console.log(response.url);
+                    });
+                }
                 else if (machine == "switch")
                     img.src = SWITCH_SRC;
                 else if (machine == "vps")
