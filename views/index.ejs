@@ -49,6 +49,9 @@
         <div id="controlpanel">
             <div id="tabmenu">
             </div>
+            <div id="log">
+
+            </div>
         </div>
         <script>
             let socket = io();
@@ -71,18 +74,17 @@
                 if (machine == "router"){
                     img.src = ROUTER_SRC;
                     let prm = new URLSearchParams();
-                    prm.append("name", "ajaxtest");
-                    let req = new Request("/machine/router/add", {
-                        method: "post",
-                        body: prm
-                    });
-                    fetch(req)
-                    .then(response =>{
-                        console.log(response.url);
-                    });
+                    prm.append("x", 30);
+                    prm.append("y", 30);
+                    PostRequest("/machine/router/add", prm);
                 }
-                else if (machine == "switch")
+                else if (machine == "switch"){
                     img.src = SWITCH_SRC;
+                    let prm = new URLSearchParams();
+                    prm.append("x", 30);
+                    prm.append("y", 30);
+                    PostRequest("/machine/switch/add", prm);
+                }
                 else if (machine == "vps")
                     img.src = VPS_SRC;
                 let x = e.clientX - canvas.getBoundingClientRect().left;
@@ -201,7 +203,25 @@
                 this.y = y;
             }
 
-            function addNewMachin(){
+            function PostRequest(url, params){
+                let req = new Request(url, {
+                    method: "post",
+                    body: params
+                });
+                fetch(req)
+                .then(response =>{
+                    return response.text();
+                }).then(text => {
+                    Stdout(text);
+                });
+            }
+            
+            const log = document.getElementById("log");
+            function Stdout(str){
+                log.insertAdjacentHTML('beforeend', '<p>' + str + '</p>');
+            }
+
+            function Stderr(str){
 
             }
         </script>
