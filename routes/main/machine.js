@@ -70,8 +70,8 @@ router.post('/switch/add', function(req, res){
                     res.send(error);
                 console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stdout: " + stdout);
                 console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stderr: " + stderr);
-                let router = { id : id, name : name, type : "router", x : x, y : y};
-                result[0].machines.push(router);
+                let l2switch = { id : id, name : name, type : type, x : x, y : y};
+                result[0].machines.push(l2switch);
                 result[0].save(function(error){
                     if (error)
                         res.send(error);
@@ -90,7 +90,25 @@ router.post('/switch/del', function(req, res){
 
 //仮想マシンの追加
 router.post('/vm/add', function(req, res){
-
+    let userid = req.session.userid;
+    
+    UserMachine.find({"userid" : userid}, function(error, result){
+        if (error)
+            res.send(error);
+        let userMachine = result[0];
+        let name = userid + userMachine.machines.length;
+        let id = String(userMachine.usernumber) + String(userMachine.machines.length) + "vm";
+        let type = "vm";
+        let x = req.body.x;
+        let y = req.body.y;
+        let vm = { id : id, name : name, type : type, x : x, y : y};
+        result[0].machines.push(vm);
+        result[0].save(function(error){
+            if (error)
+                res.send(error);
+            res.send("success : add vm on your topology");
+        });
+    });
 });
 
 //仮想マシンの削除

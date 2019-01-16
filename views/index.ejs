@@ -85,8 +85,13 @@
                     prm.append("y", 30);
                     PostRequest("/machine/switch/add", prm);
                 }
-                else if (machine == "vps")
-                    img.src = VPS_SRC;
+                else if (machine == "vps"){
+                    img.src = VM_SRC;
+                    let prm = new URLSearchParams();
+                    prm.append("x", 30);
+                    prm.append("y", 30);
+                    PostRequest("/machine/vm/add", prm);
+                }
                 let x = e.clientX - canvas.getBoundingClientRect().left;
                 let y = e.clientY - canvas.getBoundingClientRect().top;
                 context.drawImage(img, x, y);
@@ -96,7 +101,7 @@
             
             const ROUTER_SRC = "/image/router.png";
             const SWITCH_SRC = "/image/switch.png";
-            const VPS_SRC = "/image/vps.png";
+            const VM_SRC = "/image/vps.png";
 
             var cols = document.querySelectorAll('#sidemenu ul li');
             [].forEach.call(cols, function(col) {
