@@ -8,11 +8,7 @@
     <body>
         <div class="my-contextmenu" id="router-contextmenu">
             <ul>
-                <li>Ethernet 0/0</li>
-                <li>Ethernet 0/1</li>
-                <li>Ethernet 0/2</li>
-                <li>Ethernet 0/3</li>
-                <li>Ethernet 0/4</li>
+                <li><a href="">add port</a></li>
             </ul>
         </div>
 
@@ -56,18 +52,28 @@
         <script>
             let socket = io();
 
-            //start drag from sidemenu
+            /**
+             * サイドメニューの機器アイコンをドラッグしたとき発火
+             * 機器の種類を控えて, canvas上を若干透過する
+             */
             function handleDragStart(e){
-                e.dataTransfer.setData('machin', this.id);
+                e.dataTransfer.setData('machin', this.id); //idで機器の種類が取れる
                 dropArea.style.opacity = 0.3;
             }
 
-            //end drag from sidemenu
+            /**
+             * ドラッグが終了したときに発火
+             * 透過されたcanvasを元に戻す
+             */
             function handleDragEnd(e){
                 dropArea.style.opacity = 1;
             }
 
-            //when drop item on canvas
+            /**
+             * canvas上に機器がドラッグされたときに発火
+             * 機器に対応したurlにajax通信でPOSTしcanvas上に描画をする
+             * 同時にinUseMachinリストに機器のオブジェクトを格納する
+             */
             function handleDrop(e){
                 let img = new Image();
                 let machine = e.dataTransfer.getData('machin');
@@ -99,10 +105,12 @@
                 socket.emit('addmachine', machine);
             }
             
+            //機器の画像パスの定数
             const ROUTER_SRC = "/image/router.png";
             const SWITCH_SRC = "/image/switch.png";
             const VM_SRC = "/image/vps.png";
 
+            //ここからDnDのイベント登録
             var cols = document.querySelectorAll('#sidemenu ul li');
             [].forEach.call(cols, function(col) {
                 col.addEventListener('dragstart', handleDragStart, false);
@@ -113,9 +121,12 @@
                 e.preventDefault();
             }, false);
             dropArea.addEventListener('drop', handleDrop, false);
-            
+            //DnDのイベント登録ここまで
 
-            
+            /**
+             * canvas上でクリックされたら発火
+             * クリックされた座標に機器があれば移動変数moveMachineにぶち込む
+             */
             function handleCanvasOnDown(e){
                 let offsetX = canvas.getBoundingClientRect().left;
                 let offsetY = canvas.getBoundingClientRect().top;
@@ -123,15 +134,19 @@
                 let y = e.clientY - offsetY;
                 inUseMachines.forEach(function(machin){
                     if (checkLoacationOverMachin(machin, x, y)){
-                        canvasDragging = true;
+                        canvasDragging = true; //trueの間だけ動かせる
                         relX = machin.x - x;
                         relY = machin.y -y;
-                        moveMachin = machin;
+                        moveMachin = machin; //ここにぶちこんだやつが動く
                     }
                 });
 
             }
 
+            /**
+             * canvas上でマウスカーソルが動いたら発火する
+             * canvasDraggingをつかってドラックでmoveMachinの機器を動かせる
+             */
             function handleCanvasOnMove(e){
                 if (canvasDragging){
                     let offsetX = canvas.getBoundingClientRect().left;
@@ -144,6 +159,10 @@
                 }
             }
 
+            /**
+             * canvas上でクリックをやめたら発火
+             * canvasDraggingをfalseにし動けなくする
+             */
             function handleCanvasOnUp(e){
                 canvasDragging = false;
             }
@@ -152,13 +171,22 @@
                 console.log('double click');
             }
 
-            function checkLoacationOverMachin(machin, x, y){
-                if (machin.x < x && (machin.img.naturalWidth + machin.x) > x && machin.y < y && (machin.img.naturalHeight + machin.y) > y)
+            /**
+             * 現在の座標が機器の上か確認
+             * @param {machine} machine 検証する機器オブジェクト
+             * @param {number} x x座標
+             * @param {number} y y座標
+             */
+            function checkLoacationOverMachin(machine, x, y){
+                if (machine.x < x && (machine.img.naturalWidth + machine.x) > x && machine.y < y && (machine.img.naturalHeight + machine.y) > y)
                     return true;
                 else
                 return false;
             }
 
+            /**
+             * canvasを再描画する
+             */
             function canvasReDraw(){
                 context.clearRect(0, 0, canvas.width, canvas.height);
                 inUseMachines.forEach(function(machin){
@@ -166,6 +194,7 @@
                 });
             }
 
+            //ここからcanvas上のイベント登録
             const canvas = document.getElementById("canvasui");
             let context = canvas.getContext('2d');
             canvas.addEventListener('mousedown', handleCanvasOnDown, false);
@@ -177,7 +206,11 @@
             let cables = []
             let relX, relY;
             let moveMachin;
+            //canvas上のイベント登録ここまで
 
+            /**
+             * 機器上で右クリックしたときに独自のコンテキストメニューを出す処理
+             */
             let routerContextMenu = document.getElementById('router-contextmenu');
             canvas.addEventListener('contextmenu', function(e){
                 let offsetX = canvas.getBoundingClientRect().left;
@@ -199,7 +232,8 @@
                 routerContextMenu.classList.remove('show');
                 }
             });
-
+            //コンテキストメニューここまで
+            
 
             function Machin(img, id, x, y){
                 this.img = img;
@@ -208,6 +242,13 @@
                 this.y = y;
             }
 
+
+            /**
+             * 指定されたurlにPOSTする
+             * POST後ログエリアに結果を表示
+             * @param {string} url url
+             * @param {URLSearchParams} 送信データ
+             */
             function PostRequest(url, params){
                 let req = new Request(url, {
                     method: "post",
@@ -222,10 +263,18 @@
             }
             
             const log = document.getElementById("log");
+            /**
+             * ログエリアにログを追記する
+             * @param {string} str 追記する出力文字
+             */
             function Stdout(str){
                 log.insertAdjacentHTML('beforeend', '<p>' + str + '</p>');
             }
 
+            /**
+             * ログエリアにエラーログを追記する
+             * @param {string} str 追記する出力文字
+             */
             function Stderr(str){
 
             }
