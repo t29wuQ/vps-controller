@@ -12,7 +12,7 @@ router.post('/router/add', function(req, res){
     
     UserMachine.find({"userid" : userid}, function(error, result){
         if (error)
-            res.send(error);
+            res.json(getErrorJson(error));
         let userMachine = result[0];
         let name = userid + userMachine.machines.length;
         let id = (String(userMachine.usernumber) + String(userMachine.machines.length) + "0000000000000000").slice(0, 16);
@@ -21,20 +21,25 @@ router.post('/router/add', function(req, res){
         let y = req.body.y;
         exec(execPath + " 'ovs-vsctl add-br " + name + "'", function(error, stdout, stderr){
             if (error)
-                res.send(error);
+                res.json(getErrorJson(error));
             console.log("ovs-vsctl add-br " + name + " stdout: " + stdout);
             console.log("ovs-vsctl add-br " + name + " stderr: " + stderr);
             exec(execPath + " 'ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + "'", function(error, stdout, stderr){
                 if (error)
-                    res.send(error);
+                    res.json(getErrorJson(error));
                 console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stdout: " + stdout);
                 console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stderr: " + stderr);
                 let router = { id : id, name : name, type : "router", x : x, y : y};
                 result[0].machines.push(router);
                 result[0].save(function(error){
                     if (error)
-                        res.send(error);
-                    res.send("success : add router on your topology");
+                        res.json(getErrorJson(error));
+                    res.json({
+                        status: 1,
+                        name: name,
+                        id: id,
+                        log: "success: add router on your topology"
+                    });
                 });
                 
             });
@@ -53,7 +58,7 @@ router.post('/switch/add', function(req, res){
     
     UserMachine.find({"userid" : userid}, function(error, result){
         if (error)
-            res.send(error);
+            res.json(getErrorJson(error));
         let userMachine = result[0];
         let name = userid + userMachine.machines.length;
         let id = (String(userMachine.usernumber) + String(userMachine.machines.length) + "0000000000000000").slice(0, 16);
@@ -62,20 +67,25 @@ router.post('/switch/add', function(req, res){
         let y = req.body.y;
         exec(execPath + " 'ovs-vsctl add-br " + name + "'", function(error, stdout, stderr){
             if (error)
-                res.send(error);
+                res.json(getErrorJson(error));
             console.log("ovs-vsctl add-br " + name + " stdout: " + stdout);
             console.log("ovs-vsctl add-br " + name + " stderr: " + stderr);
             exec(execPath + " 'ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + "'", function(error, stdout, stderr){
                 if (error)
-                    res.send(error);
+                    res.json(getErrorJson(error));
                 console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stdout: " + stdout);
                 console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stderr: " + stderr);
                 let l2switch = { id : id, name : name, type : type, x : x, y : y};
                 result[0].machines.push(l2switch);
                 result[0].save(function(error){
                     if (error)
-                        res.send(error);
-                    res.send("success : add switch on your topology");
+                        res.json(getErrorJson(error));
+                    res.json({
+                        status: 1,
+                        name: name,
+                        id: id,
+                        log: "success: add switch on your topology"
+                    });
                 });
                 
             });
@@ -94,7 +104,7 @@ router.post('/vm/add', function(req, res){
     
     UserMachine.find({"userid" : userid}, function(error, result){
         if (error)
-            res.send(error);
+            res.json(getErrorJson(error));
         let userMachine = result[0];
         let name = userid + userMachine.machines.length;
         let id = String(userMachine.usernumber) + String(userMachine.machines.length) + "vm";
@@ -105,8 +115,13 @@ router.post('/vm/add', function(req, res){
         result[0].machines.push(vm);
         result[0].save(function(error){
             if (error)
-                res.send(error);
-            res.send("success : add vm on your topology");
+                res.json(getErrorJson(error));
+            res.json({
+                status: 1,
+                name: name,
+                id: id,
+                log: "success: add vm on your topology"
+            });
         });
     });
 });
@@ -126,18 +141,8 @@ router.post('/veth/del', function(req, res){
 
 });
 
-const addMachine = function(name, id){
-    exec(execPath + " 'ovs-vsctl add-br " + name + "'", function(error, stdout, stderr){
-        if (error || stderr)
-            return -1;
-        console.log("stdout" + stdout);
-        exec(execPath + " 'ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id, function(error, stdout, stderr){
-            if (error || stderr)
-                return -1;
-            console.log("stdout" + stdout);
-            return 0;
-        });
-    });
+const getErrorJson = function(error){
+    return {status: 0, log: error};
 }
 
 module.exports = router;

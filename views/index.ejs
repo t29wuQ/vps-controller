@@ -50,7 +50,7 @@
             </div>
         </div>
         <script>
-            let socket = io();
+            //let socket = io();
 
             /**
              * サイドメニューの機器アイコンをドラッグしたとき発火
@@ -76,27 +76,40 @@
              */
             function handleDrop(e){
                 let img = new Image();
-                let machine = e.dataTransfer.getData('machin');
+                let type = e.dataTransfer.getData('machin');
                 let x = e.clientX - canvas.getBoundingClientRect().left;
                 let y = e.clientY - canvas.getBoundingClientRect().top;
-                let prm = new URLSearchParams();
-                prm.append("x", x);
-                prm.append("y", y);
-                if (machine == "router"){
+                let params = new URLSearchParams();
+                params.append("x", x);
+                params.append("y", y);
+                let url = ""
+                if (type== "router"){
                     img.src = ROUTER_SRC;
-                    PostRequest("/machine/router/add", prm);
+                    url = "/machine/router/add";
                 }
-                else if (machine == "switch"){
+                else if (type == "switch"){
                     img.src = SWITCH_SRC;
-                    PostRequest("/machine/switch/add", prm);
+                    url = "/machine/switch/add";
                 }
-                else if (machine == "vps"){
+                else if (type == "vps"){
                     img.src = VM_SRC;
-                    PostRequest("/machine/vm/add", prm);
+                    url = "/machine/vm/add";
                 }
-                context.drawImage(img, x, y);
-                inUseMachines.push(new Machin(img, 1, x, y));
-                socket.emit('addmachine', machine);
+                let req = new Request(url, {
+                    method: "post",
+                    body: params
+                });
+                fetch(req)
+                .then(response =>{
+                    return response.json();
+                }).then(json => {
+                    if (json.status == 1){
+                        inUseMachines.push(new Machine(img, json.id, json.name, "", "", type, x, y));
+                        canvasReDraw();
+                    }
+                    Stdout(json.log);
+                });
+                //socket.emit('addmachine', machine);
             }
             
             //機器の画像パスの定数
@@ -126,12 +139,12 @@
                 let offsetY = canvas.getBoundingClientRect().top;
                 let x = e.clientX - offsetX;
                 let y = e.clientY - offsetY;
-                inUseMachines.forEach(function(machin){
-                    if (checkLoacationOverMachin(machin, x, y)){
+                inUseMachines.forEach(function(machine){
+                    if (checkLoacationOverMachin(machine, x, y)){
                         canvasDragging = true; //trueの間だけ動かせる
-                        relX = machin.x - x;
-                        relY = machin.y -y;
-                        moveMachin = machin; //ここにぶちこんだやつが動く
+                        relX = machine.x - x;
+                        relY = machine.y -y;
+                        moveMachine = machine; //ここにぶちこんだやつが動く
                     }
                 });
 
@@ -147,8 +160,8 @@
                     let offsetY = canvas.getBoundingClientRect().top;
                     let x = e.clientX - offsetX;
                     let y = e.clientY - offsetY;
-                    moveMachin.x = x + relX;
-                    moveMachin.y = y + relY;
+                    moveMachine.x = x + relX;
+                    moveMachine.y = y + relY;
                     canvasReDraw();
                 }
             }
@@ -183,8 +196,8 @@
              */
             function canvasReDraw(){
                 context.clearRect(0, 0, canvas.width, canvas.height);
-                inUseMachines.forEach(function(machin){
-                    context.drawImage(machin.img, machin.x, machin.y);
+                inUseMachines.forEach(function(machine){
+                    context.drawImage(machine.img, machine.x, machine.y);
                 });
             }
 
@@ -199,7 +212,7 @@
             let inUseMachines = []
             let cables = []
             let relX, relY;
-            let moveMachin;
+            let moveMachine;
             //canvas上のイベント登録ここまで
 
             /**
@@ -229,11 +242,16 @@
             //コンテキストメニューここまで
 
 
-            function Machin(img, id, x, y){
+            function Machine(img, id, name, display_name, description, type, x, y){
                 this.img = img;
                 this.id = id;
+                this.name = name;
+                this.display_name = display_name;
+                this.description = description;
+                this.type = type;
                 this.x = x;
                 this.y = y;
+                this.port = []
             }
 
 
@@ -250,9 +268,10 @@
                 });
                 fetch(req)
                 .then(response =>{
-                    return response.text();
-                }).then(text => {
-                    Stdout(text);
+                    return response.json();
+                }).then(json => {
+                    new Machine
+                    Stdout(json.log);
                 });
             }
             
