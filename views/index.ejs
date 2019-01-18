@@ -6,9 +6,9 @@
         <title>Virtual Machine Controll Panel</title>
     </head>
     <body>
-        <div class="my-contextmenu" id="router-contextmenu">
+        <div class="my-contextmenu" id="contextmenu">
             <ul>
-                <li><a href="">add port</a></li>
+                <li><a href="javascript:void(0);" onclick="AddPort();">add port</a></li>
             </ul>
         </div>
 
@@ -104,7 +104,7 @@
                     return response.json();
                 }).then(json => {
                     if (json.status == 1){
-                        inUseMachines.push(new Machine(img, json.id, json.name, "", "", type, x, y));
+                        inUseMachines.push(new Machine(img, json.name, "", "", type, x, y, json.port));
                         canvasReDraw();
                     }
                     Stdout(json.log);
@@ -139,6 +139,16 @@
                 let offsetY = canvas.getBoundingClientRect().top;
                 let x = e.clientX - offsetX;
                 let y = e.clientY - offsetY;
+                if (vethDrawing){
+                    inUseMachines.forEach(function(machine){
+                        if (checkLoacationOverMachin(machine, x, y)){
+                            console.log("connect");
+                            vethDrawing = false;
+                        }
+                    });
+                    //canvasReDraw();
+                    return;
+                }
                 inUseMachines.forEach(function(machine){
                     if (checkLoacationOverMachin(machine, x, y)){
                         canvasDragging = true; //trueの間だけ動かせる
@@ -147,22 +157,31 @@
                         moveMachine = machine; //ここにぶちこんだやつが動く
                     }
                 });
-
             }
 
             /**
              * canvas上でマウスカーソルが動いたら発火する
              * canvasDraggingをつかってドラックでmoveMachinの機器を動かせる
+             * vethDrawingがtrueのときport追加モード
              */
             function handleCanvasOnMove(e){
+                let offsetX = canvas.getBoundingClientRect().left;
+                let offsetY = canvas.getBoundingClientRect().top;
+                let x = e.clientX - offsetX;
+                let y = e.clientY - offsetY;
                 if (canvasDragging){
-                    let offsetX = canvas.getBoundingClientRect().left;
-                    let offsetY = canvas.getBoundingClientRect().top;
-                    let x = e.clientX - offsetX;
-                    let y = e.clientY - offsetY;
                     moveMachine.x = x + relX;
                     moveMachine.y = y + relY;
                     canvasReDraw();
+                }
+                if (vethDrawing){
+                    canvasReDraw();
+                    let beginX = now_context.x + now_context.img.naturalWidth / 2;
+                    let beginY = now_context.y + now_context.img.naturalHeight / 2;
+                    context.beginPath();
+                    context.moveTo(beginX, beginY);
+                    context.lineTo(x, y);
+                    context.stroke();
                 }
             }
 
@@ -218,33 +237,49 @@
             /**
              * 機器上で右クリックしたときに独自のコンテキストメニューを出す処理
              */
-            let routerContextMenu = document.getElementById('router-contextmenu');
+            let contextMenu = document.getElementById('contextmenu');
+            let now_context = "";
+            let vethDrawing = false;
             canvas.addEventListener('contextmenu', function(e){
+                if (vethDrawing){
+                    vethDrawing = false;
+                    canvasReDraw();
+                }
                 let offsetX = canvas.getBoundingClientRect().left;
                 let offsetY = canvas.getBoundingClientRect().top;
                 let x = e.clientX - offsetX;
                 let y = e.clientY - offsetY;
                 inUseMachines.forEach(function(machin){
                     if (checkLoacationOverMachin(machin, x, y)){
-                        routerContextMenu.style.left = (x + offsetX)+'px';
-                        routerContextMenu.style.top = (y + offsetY)+'px';
-                        routerContextMenu.classList.add('show');
+                        contextMenu.style.left = (x + offsetX)+'px';
+                        contextMenu.style.top = (y + offsetY)+'px';
+                        contextMenu.classList.add('show');
+                        let html = "<ul>";
+                        for (i = 0;i < machine.port.length;i++){
+                            html += '<li><a href="javascript:void(0);" onclick="AddPort(' + i + ');">add port</a></li>';
+                        }
+                        html += "</ul>"
                         canvasDragging = false;
+                        now_context = machin;
                         return;
                     }
                 });
             }, false);
             document.body.addEventListener('click',function(){
-                if(routerContextMenu.classList.contains('show')) {
-                routerContextMenu.classList.remove('show');
+                if(contextMenu.classList.contains('show')) {
+                contextMenu.classList.remove('show');
                 }
             });
             //コンテキストメニューここまで
 
+            function AddPort(port_number){
+                vethDrawing = true;
+            }
 
-            function Machine(img, id, name, display_name, description, type, x, y){
+
+
+            function Machine(img, name, display_name, description, type, x, y, port){
                 this.img = img;
-                this.id = id;
                 this.name = name;
                 this.display_name = display_name;
                 this.description = description;
@@ -252,6 +287,17 @@
                 this.x = x;
                 this.y = y;
                 this.port = []
+            }
+
+            function Port(id ,name, access_point, port_number, x, y, ip_address, mac_address){
+                this.id = id;
+                thiss.name = name;
+                this.access_point = access_point;
+                this.port_number = port_number
+                this.x = x;
+                this.y = y;
+                this.ip_address = ip_address;
+                this.mac_address = mac_address;
             }
 
 
