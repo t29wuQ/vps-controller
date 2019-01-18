@@ -15,7 +15,7 @@ router.post('/signup', function(req, res){
     let password = req.body.password;
     User.find({"userid" : userid}, function(err, result){
         if (err)
-            console.log(err);
+            return res.send(err);
         if (result.length == 0){ 
             console.log("register");
             let user = new User();
@@ -23,13 +23,17 @@ router.post('/signup', function(req, res){
             user.password = password;
             user.save(function(err){
                 if (err)
-                    res.send(err);
-                let userMachine = new UserMachine();
-                userMachine.userid = userid;
-                userMachine.save(function(err){
-                    if (err)
-                        res.send(err);
-                    res.send("new created account");
+                    return res.send(err);
+                UserMachine.count({}, function(err, count){
+                    let userMachine = new UserMachine();
+                    userMachine.userid = userid;
+                    console.log(count);
+                    userMachine.usernumber = count;
+                    userMachine.save(function(err){
+                        if (err)
+                            return res.send(err);
+                        res.send("new created account");
+                    });
                 });
             });
         } else {
