@@ -13,6 +13,7 @@ let UserMachine = new Schema({
         x : {type: Number, require: true},
         y : {type: Number, require: true},
         port : [{
+            status: {type: Number, require: true}, //0, 設定が無効 1, 接続がされていない 2, 稼働中
             id : {type: String, require: true},
             name : {type: String, require: true},
             access_point : {type: String, require: true},
