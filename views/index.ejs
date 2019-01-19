@@ -249,18 +249,22 @@
                 let offsetY = canvas.getBoundingClientRect().top;
                 let x = e.clientX - offsetX;
                 let y = e.clientY - offsetY;
-                inUseMachines.forEach(function(machin){
-                    if (checkLoacationOverMachin(machin, x, y)){
+                inUseMachines.forEach(function(machine){
+                    if (checkLoacationOverMachin(machine, x, y)){
                         contextMenu.style.left = (x + offsetX)+'px';
                         contextMenu.style.top = (y + offsetY)+'px';
                         contextMenu.classList.add('show');
                         let html = "<ul>";
+                        console.log(machine.port);
                         for (i = 0;i < machine.port.length;i++){
-                            html += '<li><a href="javascript:void(0);" onclick="AddPort(' + i + ');">add port</a></li>';
+                            if (machine.port.status == 2)
+                                html += '<li color="green">Ethernet' + i + ' 接続中</li>';
+                            html += '<li><a href="javascript:void(0);" onclick="AddPort(' + i + ');">Ethernet' + i + '</a></li>';
                         }
                         html += "</ul>"
+                        contextMenu.innerHTML = html;
                         canvasDragging = false;
-                        now_context = machin;
+                        now_context = machine;
                         return;
                     }
                 });
@@ -286,7 +290,7 @@
                 this.type = type;
                 this.x = x;
                 this.y = y;
-                this.port = []
+                this.port = port;
             }
 
             function Port(id ,name, access_point, port_number, x, y, ip_address, mac_address){

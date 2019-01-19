@@ -5,7 +5,8 @@ const exec = require('child_process').exec;
 const execPath = require('path').resolve(__dirname, './exec.sh');
 require('date-utils');
 
-const INITIAL_NUMBER_OF_PORTS = 3; //ルーター作成時の初期ポート数
+const INITIAL_NUMBER_OF_PORTS_OF_ROUTER = 3; //ルーター作成時の初期ポート数
+const INITIAL_NUMBER_OF_PORTS_OF_SWITCH = 6; //スイッチ作成時の初期ポート数
 
 /**
  * エラー文のjsonを返す
@@ -35,7 +36,7 @@ router.post('/router/add', function(req, res){
             let router = { name: name, display_name: "router", type: type, x: x, y: y };
             userMachine.machines.push(router);
             let ports = []
-            for (i = 0;i < INITIAL_NUMBER_OF_PORTS;i++){
+            for (i = 0;i < INITIAL_NUMBER_OF_PORTS_OF_ROUTER;i++){
                 let port = {status: 0, name: "", open_port_number: i, ip_address: "", mac_address: ""};
                 userMachine.machines.push(port);
                 ports.push(port)
@@ -60,7 +61,9 @@ router.post('/router/del', function(req, res){
 
 });
 
-//スイッチの追加
+/**
+ * スイッチの追加
+ */
 router.post('/switch/add', function(req, res){
     let userid = req.session.userid;
     
@@ -69,33 +72,29 @@ router.post('/switch/add', function(req, res){
             res.json(getErrorJson(error));
         let userMachine = result[0];
         let name = userid + userMachine.machines.length;
-        let id = (String(userMachine.usernumber) + String(userMachine.machines.length) + "0000000000000000").slice(0, 16);
         let type = "switch";
         let x = req.body.x;
         let y = req.body.y;
         exec(execPath + " 'ovs-vsctl add-br " + name + "'", function(error, stdout, stderr){
             if (error)
                 res.json(getErrorJson(error));
-            console.log("ovs-vsctl add-br " + name + " stdout: " + stdout);
-            console.log("ovs-vsctl add-br " + name + " stderr: " + stderr);
-            exec(execPath + " 'ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + "'", function(error, stdout, stderr){
+            let l2switch = { name : name, display_name : "switch", type : type, x : x, y : y};
+            userMachine.machines.push(l2switch);
+            let ports = []
+            for (i = 0;i < INITIAL_NUMBER_OF_PORTS_OF_SWITCH;i++){
+                let port = {status: 0, name: "", open_port_number: i};
+                userMachine.machines.push(port);
+                ports.push(port)
+            }
+            userMachine.save(function(error){
                 if (error)
                     res.json(getErrorJson(error));
-                console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stdout: " + stdout);
-                console.log("ovs-vsctl set bridge " + name + " other-config:datapath-id=" + id + " stderr: " + stderr);
-                let l2switch = { id : id, name : name, type : type, x : x, y : y};
-                result[0].machines.push(l2switch);
-                result[0].save(function(error){
-                    if (error)
-                        res.json(getErrorJson(error));
-                    res.json({
-                        status: 1,
-                        name: name,
-                        id: id,
-                        log: "success: add switch on your topology"
-                    });
+                res.json({
+                    status: 1,
+                    name: name,
+                    port: ports,
+                    log: "success: add switch on your topology"
                 });
-                
             });
         });
     });
@@ -115,11 +114,10 @@ router.post('/vm/add', function(req, res){
             res.json(getErrorJson(error));
         let userMachine = result[0];
         let name = userid + userMachine.machines.length;
-        let id = String(userMachine.usernumber) + String(userMachine.machines.length) + "vm";
         let type = "vm";
         let x = req.body.x;
         let y = req.body.y;
-        let vm = { id : id, name : name, type : type, x : x, y : y};
+        let vm = { name : name, type : type, x : x, y : y};
         result[0].machines.push(vm);
         result[0].save(function(error){
             if (error)
@@ -127,7 +125,6 @@ router.post('/vm/add', function(req, res){
             res.json({
                 status: 1,
                 name: name,
-                id: id,
                 log: "success: add vm on your topology"
             });
         });
