@@ -4,7 +4,6 @@ const Schema = mongoose.Schema;
 let UserMachine = new Schema({
     userid : {type: String, require: true, unique: true}, //ログイン用のuserid
     usernumber : {type : Number, require: true, unique: true}, //内部用のuserid
-    if_count : {type : Number, require : true}, //IF名の重複を防ぐためのカウント
     machines : [{
         open_machine_id : {type : String, require: true}, //公開用の機器ID
         name : {type: String, require: true}, //機器の実名称
