@@ -4,7 +4,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const mongoose = require('mongoose');
+//const mongoose = require('mongoose');
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const indexRouter = require('./routes/index');
@@ -27,7 +27,7 @@ app.use(session({
   }));
 
 const sessionCheck = function(req, res, next){
-    if (req.session.userid)
+    if (req.session.login_id)
         next()
     else{
         console.log('out');
@@ -54,5 +54,5 @@ io.on('connection', function(socket){
 // ポート3000でサーバを立てる
 http.listen(3000, function(){
     console.log('server listening. Port:');
-    mongoose.connect('mongodb://localhost:27017/vpsapi');
+    //mongoose.connect('mongodb://localhost:27017/vpsapi');
 });
