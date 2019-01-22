@@ -103,8 +103,8 @@
                 .then(response =>{
                     return response.json();
                 }).then(json => {
-                    if (json.status == 1){
-                        inUseMachines.push(new Machine(img, json.name, "", "", type, x, y, json.port));
+                    if (json.status == 0){
+                        inUseMachines.push(new Machine(img, json.id, json.name, "", type, x, y));
                         canvasReDraw();
                     }
                     Stdout(json.log);
@@ -142,8 +142,34 @@
                 if (vethDrawing){
                     inUseMachines.forEach(function(machine){
                         if (checkLoacationOverMachin(machine, x, y)){
-                            console.log("connect");
+                            console.log("veth connect");
                             vethDrawing = false;
+                            end_x = machine.x + machine.img.naturalWidth / 2;
+                            end_y = machine.y + machine.img.naturalHeight / 2;
+                            let params = new URLSearchParams();
+                            params.append("attach_machine_port1", now_context.name);
+                            params.append("attach_machine_port2", machine.name);
+                            params.append("port1_number", 1);
+                            params.append("port2_number", 1);
+                            params.append("begin_x", begin_x);
+                            params.append("begin_y", begin_y);
+                            params.append("end_x", end_x);
+                            params.append("end_y", end_y);
+                            let req = new Request("/machine/veth/add", {
+                                method: "post",
+                                body: params
+                            });
+                            fetch(req)
+                            .then(response =>{
+                                return response.json();
+                            }).then(json => {
+                                console.log(json.log);
+                                canvasReDraw();
+                                context.beginPath();
+                                context.moveTo(begin_x, begin_y);
+                                context.lineTo(end_x, end_y);
+                                context.stroke();
+                            });
                         }
                     });
                     //canvasReDraw();
@@ -176,10 +202,10 @@
                 }
                 if (vethDrawing){
                     canvasReDraw();
-                    let beginX = now_context.x + now_context.img.naturalWidth / 2;
-                    let beginY = now_context.y + now_context.img.naturalHeight / 2;
+                    begin_x = now_context.x + now_context.img.naturalWidth / 2;
+                    begin_y = now_context.y + now_context.img.naturalHeight / 2;
                     context.beginPath();
-                    context.moveTo(beginX, beginY);
+                    context.moveTo(begin_x, begin_y);
                     context.lineTo(x, y);
                     context.stroke();
                 }
@@ -239,6 +265,10 @@
              */
             let contextMenu = document.getElementById('contextmenu');
             let now_context = "";
+            let begin_x = 0;
+            let begin_y = 0;
+            let end_x = 0;
+            let end_y = 0;
             let vethDrawing = false;
             canvas.addEventListener('contextmenu', function(e){
                 if (vethDrawing){
@@ -259,7 +289,8 @@
                         for (i = 0;i < machine.port.length;i++){
                             if (machine.port.status == 2)
                                 html += '<li color="green">Ethernet' + i + ' 接続中</li>';
-                            html += '<li><a href="javascript:void(0);" onclick="AddPort(' + i + ');">Ethernet' + i + '</a></li>';
+                            else
+                                html += '<li><a href="javascript:void(0);" onclick="AddPort(' + i + ');">Ethernet' + i + '</a></li>';
                         }
                         html += "</ul>"
                         contextMenu.innerHTML = html;
@@ -282,15 +313,15 @@
 
 
 
-            function Machine(img, name, display_name, description, type, x, y, port){
+            function Machine(img, id, name, description, type, x, y){
                 this.img = img;
+                this.id = id
                 this.name = name;
-                this.display_name = display_name;
                 this.description = description;
                 this.type = type;
                 this.x = x;
                 this.y = y;
-                this.port = port;
+                this.port = [];
             }
 
             function Port(id ,name, access_point, port_number, x, y, ip_address, mac_address){
