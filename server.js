@@ -7,9 +7,11 @@ const session = require('express-session');
 //const mongoose = require('mongoose');
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
+const connection = require('./mysql');
 const indexRouter = require('./routes/index');
 const accountRouter = require('./routes/auth/account');
 const machineRouter = require('./routes/main/machine')
+
 
 app.use(express.static('public'));
 app.use(express.static('views'));
@@ -30,7 +32,6 @@ const sessionCheck = function(req, res, next){
     if (req.session.login_id)
         next()
     else{
-        console.log('out');
         res.redirect('/account/');
     }
 };
@@ -40,8 +41,6 @@ app.use('/', sessionCheck);
 app.use('/', indexRouter);
 app.use('/machine', machineRouter);
 
-// ルート（http://localhost/）にアクセスしてきたときに「Hello」を返す
-//app.get('/', (req, res) => res.sendFile('/views/index.html'));
 
 
 io.on('connection', function(socket){
@@ -53,6 +52,12 @@ io.on('connection', function(socket){
 
 // ポート3000でサーバを立てる
 http.listen(3000, function(){
-    console.log('server listening. Port:');
-    //mongoose.connect('mongodb://localhost:27017/vpsapi');
+    console.log('server listening Port: 3000');
+    connection.connect(function(err){
+        if (err){
+            console.log(err.stack);
+            retuern;
+        }
+        console.log("Success connection to MySql");
+    })
 });

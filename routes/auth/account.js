@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bodyParser = require('body-parser');
-const mysql = require('mysql');
+const queryExec = require('../../query_exec');
 const crypto = require('crypto');
 
 
@@ -12,49 +12,6 @@ const USER_ID_LEN = 4;
 //暗号化キー
 const ENCRYPTION_KEY = "densankey"
 
-/**
- * mysqlとの接続設定
- */
-const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'densan',
-    database: 'vps_db',
-    insecureAuth : true
-});
-
-/**
- * DBと接続する
- */
-const connect = function(){
-    return new Promise(function(resolve, reject){
-        connection.connect(function(err){
-            if (err){
-                console.log(err.stack);
-                reject(new Error(err.stack));
-                retuern;
-            }
-            resolve(connection.threadId);
-        })
-    })
-}
-
-/**
- * queryを実行
- * @param {String} query 
- */
-const queryExec = function(query){
-    return new Promise(function(resolve, reject){
-        connection.query(query, function(err, rows, fields){
-            if (err){
-                console.log(Error);
-                reject(new Error(err.sqlMessage));
-                return;
-            }
-            resolve(rows);
-        });
-    })
-}
 
 router.get('/', function(req, res){
     res.render("account.ejs");
