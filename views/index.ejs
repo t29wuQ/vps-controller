@@ -254,8 +254,8 @@
             canvas.addEventListener('mouseup', handleCanvasOnUp, false);
             canvas.addEventListener('dblclick', handleCanvasDoubleClick, false);
             let canvasDragging = false;
-            let inUseMachines = []
-            let cables = []
+            let inUseMachines = [] //登録された機器を格納
+            let inUsePorts = [] //登録されたポートを格納
             let relX, relY;
             let moveMachine;
             //canvas上のイベント登録ここまで
@@ -284,14 +284,21 @@
                         contextMenu.style.left = (x + offsetX)+'px';
                         contextMenu.style.top = (y + offsetY)+'px';
                         contextMenu.classList.add('show');
+                        let ports = []; //検索結果に当てはまるポートを格納
+                        inUsePorts.forEach(function(port){
+                            if (port.machine_id == machine.id)
+                                ports.push(port);
+                        });
+
                         let html = "<ul>";
-                        console.log(machine.port);
-                        for (i = 0;i < machine.port.length;i++){
-                            if (machine.port.status == 2)
-                                html += '<li color="green">Ethernet' + i + ' 接続中</li>';
-                            else
-                                html += '<li><a href="javascript:void(0);" onclick="AddPort(' + i + ');">Ethernet' + i + '</a></li>';
+                            console.log(machine.id);
+                        for (i = 0;i < ports.length;i++){
+                            // if (machine.port.status == 2)
+                            //     html += '<li color="green">Ethernet' + i + ' 接続中</li>';
+                            // else
+                                html += '<li><a href="javascript:void(0);" onclick="connectPort(' + i + ');">Ethernet' + i + '</a></li>';
                         }
+                        html += '<li><a href="javascript:void(0);" onclick="addPort(' + "'" + machine.id + "')" + '";">ポートを追加</a></li>'
                         html += "</ul>"
                         contextMenu.innerHTML = html;
                         canvasDragging = false;
@@ -306,8 +313,28 @@
                 }
             });
             //コンテキストメニューここまで
+            
+            function addPort(id){
+                console.log(">");
+                let params = new URLSearchParams();
+                params.append("id", id);
+                let req = new Request("/machine/port/add", {
+                    method: "post",
+                    body: params
+                });
+                fetch(req)
+                .then(response =>{
+                    return response.json();
+                }).then(json => {
+                    if (json.status == 0){
+                        inUsePorts.push(new Port(json.id, id, json.number, "", ""));
+                    }
+                    Stdout(json.log);
+                });
 
-            function AddPort(port_number){
+            }
+
+            function connectPort(port_number){
                 vethDrawing = true;
             }
 
@@ -321,16 +348,12 @@
                 this.type = type;
                 this.x = x;
                 this.y = y;
-                this.port = [];
             }
 
-            function Port(id ,name, access_point, port_number, x, y, ip_address, mac_address){
+            function Port(id ,machine_id, number, ip_address, mac_address){
                 this.id = id;
-                thiss.name = name;
-                this.access_point = access_point;
-                this.port_number = port_number
-                this.x = x;
-                this.y = y;
+                this.machine_id = machine_id;
+                this.number = number;
                 this.ip_address = ip_address;
                 this.mac_address = mac_address;
             }

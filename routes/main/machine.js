@@ -137,8 +137,42 @@ router.post('/vm/add', async function(req, res){
 
 //仮想マシンの削除
 router.post('/vm/del', function(req, res){
-
+    
 });
+
+
+/**
+ * ポートの追加
+ */
+router.post('/port/add', async function(req,res){
+    try{
+        const user_id_search = await queryExec("select login_id, user_id from user where login_id='"+req.session.login_id+"';");
+        const user_id = user_id_search[0].user_id;
+        const is_exist_machine = await queryExec("select open_id, user_id from machine where open_id='"+req.body.id+"' and user_id='"+user_id+"';");
+        if (is_exist_machine.length == 0){
+            res.json({
+                status: 1,
+                log: "Error"
+            });
+            return;
+        }
+        const port_sum_search = await queryExec("select machine_id from port where machine_id='"+req.body.id+"';");
+        const open_number = port_sum_search.length;
+        open_id = "port_"+new Date().toFormat("YYYYMMDDHH24MISS");
+        await queryExec("insert into port (open_id, machine_id, open_number) values ('"
+                        +open_id+"','"+req.body.id+"','"+open_number+"');");
+        res.json({
+            status: 0,
+            id: open_id,
+            number: open_number,
+            log: "Success: add port on your machine"
+        });
+    } catch(error){
+        console.log(error);
+        res.json(getErrorJson(error));
+    }
+});
+
 
 /**
  * vethの追加
