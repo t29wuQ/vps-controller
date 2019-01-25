@@ -6,6 +6,7 @@ const execPath = require('path').resolve(__dirname, './exec.sh');
 const queryExec = require("../../query_exec");
 require('date-utils');
 
+const random_name_char_set = "abcdefghijklmnopqrstuvwxyz0123456789";
 
 /**
  * エラー文のjsonを返す
@@ -77,11 +78,10 @@ router.post('/switch/add', async function(req, res){
         const user_id = user_id_search[0].user_id;
         let name = ""; //15文字
         let search_name;
-        const switch_name_char_set = "abcdefghijklmnopqrstuvwxyz0123456789";
         do {
             name = "";
             for (let i=0;i < 15;i++)
-                name += switch_name_char_set[Math.floor(Math.random()* switch_name_char_set.length)];
+                name += random_name_char_set[Math.floor(Math.random()* random_name_char_set.length)];
             search_name = await queryExec("select name from machine where name='"+name+"';");
         } while (search_name.length != 0); //既存のbridge名と重複したら再生性
         const command = "'ovs-vsctl add-br " + name + "'";
@@ -178,7 +178,67 @@ router.post('/port/add', async function(req,res){
  * vethの追加
  */
 router.post('/veth/add', async function(req, res){
-    
+    try{
+        const user_id_search = await queryExec("select login_id, user_id from user where login_id='"+req.session.login_id+"';");
+        const user_id = user_id_search[0].user_id;
+        const open_id = "veth_"+new Date().toFormat("YYYYMMDDHH24MISS");
+        const port_id = [req.body.port1, req.body.port2];
+        const machine_list = [];
+        for (let i = 0;i < 2;i++){
+            const get_machine_id = await queryExec("select open_id, machine_id from port where open_id='"+port_id[i]+"';")
+            if (get_machine_id.length == 0){
+                console.log("存在しないポートです");
+                return;
+            }
+            const is_exist_machine = await queryExec("select open_id, user_id, type from machine where open_id='"+get_machine_id[0].machine_id+"' and user_id='"+user_id+"';");
+            if (is_exist_machine == 0){
+                console.log("存在しない機器です");
+                return;
+            }
+            let name = ""; //15文字
+            let search_name1, search_name2;
+            do {
+                name = "";
+                for (let i=0;i < 15;i++)
+                    name += random_name_char_set[Math.floor(Math.random()* random_name_char_set.length)];
+                search_name1 = await queryExec("select name from port where name='"+name+"';");
+                search_name2 = await queryExec("select name from machine where name='"+name+"';");
+            } while (search_name1.length != 0 || search_name2.length != 0); //既存のbridge名と重複したら再生性
+            machine_list.push({machine: is_exist_machine, port_name: name, port_id: port_id[i]});
+        }
+        console.log(machine_list.length);
+        if (machine_list.length != 2){
+            res.json({
+                status: 1,
+                log: "Error"
+            });
+            return;
+        }
+        const command = "'ip link add "+machine_list[0].port_name+" type veth peer name "+machine_list[1].port_name+"'";
+        console.log(command + "-> " + await execShellCommand(command));
+        for (let i = 0;i < 2;i++){
+            if (machine_list[i].type == "router"){
+                const command = "'ip link set "+machine_list[i].port_name+" netns "+machine_list[i].name+" up'";
+                console.log(command + "-> " + await execShellCommand(command));
+            } else if (machine_list[i].type == "switch"){
+                const command = "'ovs-vsctl add-port "+machine_list[i].name+" "+machine_list[i].port_name+"'";
+                console.log(command + "-> " + await execShellCommand(command));
+            } else if (machine_list[i].type == "vm"){
+
+            }
+            await queryExec("update port set name='"+machine_list[i].port_name+"' where open_id='"+machine_list[i].port_id+"';");
+        }
+        await queryExec("insert into veth (open_id, port1, port2) values ('"
+                        +open_id+"','"+machine_list[0].port_id+"','"+machine_list[1].port_id+"');");
+        res.json({
+            status: 0,
+            id: open_id,
+            log: "Success: connection port"
+        });
+    } catch(error){
+        console.log(error);
+        res.json(getErrorJson(error));
+    }
 });
 
 //vethの削除

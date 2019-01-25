@@ -135,6 +135,10 @@
              * クリックされた座標に機器があれば移動変数moveMachineにぶち込む
              */
             function handleCanvasOnDown(e){
+                if (wait_select_port){
+                    wait_select_port = false;
+                    canvasReDraw();
+                }
                 let offsetX = canvas.getBoundingClientRect().left;
                 let offsetY = canvas.getBoundingClientRect().top;
                 let x = e.clientX - offsetX;
@@ -142,34 +146,27 @@
                 if (vethDrawing){
                     inUseMachines.forEach(function(machine){
                         if (checkLoacationOverMachin(machine, x, y)){
-                            console.log("veth connect");
+                            contextMenu.style.left = (x + offsetX)+'px';
+                            contextMenu.style.top = (y + offsetY)+'px';
+                            contextMenu.classList.add('show');
+                            let ports = []; //検索結果に当てはまるポートを格納
+                            inUsePorts.forEach(function(port){
+                                if (port.machine_id == machine.id)
+                                    ports.push(port);
+                            });
+
+                            let html = "<ul>";
+                            for (i = 0;i < ports.length;i++){
+                                // if (machine.port.status == 2)
+                                //     html += '<li color="green">Ethernet' + i + ' 接続中</li>';
+                                // else
+                                    html += '<li><a href="javascript:void(0);" onclick="addVeth(' + "'" + ports[i].id + "')" + '";">Ethernet' + i + '</a></li>';
+                            }
+                            html += "</ul>"
+                            contextMenu.innerHTML = html;
+                            canvasDragging = false;
                             vethDrawing = false;
-                            end_x = machine.x + machine.img.naturalWidth / 2;
-                            end_y = machine.y + machine.img.naturalHeight / 2;
-                            let params = new URLSearchParams();
-                            params.append("attach_machine_port1", now_context.name);
-                            params.append("attach_machine_port2", machine.name);
-                            params.append("port1_number", 1);
-                            params.append("port2_number", 1);
-                            params.append("begin_x", begin_x);
-                            params.append("begin_y", begin_y);
-                            params.append("end_x", end_x);
-                            params.append("end_y", end_y);
-                            let req = new Request("/machine/veth/add", {
-                                method: "post",
-                                body: params
-                            });
-                            fetch(req)
-                            .then(response =>{
-                                return response.json();
-                            }).then(json => {
-                                console.log(json.log);
-                                canvasReDraw();
-                                context.beginPath();
-                                context.moveTo(begin_x, begin_y);
-                                context.lineTo(end_x, end_y);
-                                context.stroke();
-                            });
+                            wait_select_port = true;
                         }
                     });
                     //canvasReDraw();
@@ -256,6 +253,7 @@
             let canvasDragging = false;
             let inUseMachines = [] //登録された機器を格納
             let inUsePorts = [] //登録されたポートを格納
+            let inUseVeths = [] //登録されたケーブルを格納
             let relX, relY;
             let moveMachine;
             //canvas上のイベント登録ここまで
@@ -265,11 +263,14 @@
              */
             let contextMenu = document.getElementById('contextmenu');
             let now_context = "";
+            let current_select_port; //始点ポート
+            let end_point_port; //終端ポート
             let begin_x = 0;
             let begin_y = 0;
             let end_x = 0;
             let end_y = 0;
-            let vethDrawing = false;
+            let vethDrawing = false; //trueのとき線描画モード
+            let wait_select_port = false; //trueのときport選択待ち
             canvas.addEventListener('contextmenu', function(e){
                 if (vethDrawing){
                     vethDrawing = false;
@@ -291,12 +292,11 @@
                         });
 
                         let html = "<ul>";
-                            console.log(machine.id);
                         for (i = 0;i < ports.length;i++){
                             // if (machine.port.status == 2)
                             //     html += '<li color="green">Ethernet' + i + ' 接続中</li>';
                             // else
-                                html += '<li><a href="javascript:void(0);" onclick="connectPort(' + i + ');">Ethernet' + i + '</a></li>';
+                                html += '<li><a href="javascript:void(0);" onclick="connectPort(' + "'" + ports[i].id + "')" + '";">Ethernet' + i + '</a></li>';
                         }
                         html += '<li><a href="javascript:void(0);" onclick="addPort(' + "'" + machine.id + "')" + '";">ポートを追加</a></li>'
                         html += "</ul>"
@@ -308,14 +308,14 @@
                 });
             }, false);
             document.body.addEventListener('click',function(){
-                if(contextMenu.classList.contains('show')) {
-                contextMenu.classList.remove('show');
+                if(contextMenu.classList.contains('show') && !vethDrawing && !wait_select_port) {
+                    console.log("remove");
+                    contextMenu.classList.remove('show');
                 }
             });
             //コンテキストメニューここまで
             
             function addPort(id){
-                console.log(">");
                 let params = new URLSearchParams();
                 params.append("id", id);
                 let req = new Request("/machine/port/add", {
@@ -334,8 +334,35 @@
 
             }
 
-            function connectPort(port_number){
+            function addVeth(id){
+                console.log(current_select_port);
+                console.log(id);
+                let params = new URLSearchParams();
+                params.append("port1", current_select_port.id);
+                params.append("port2", id);
+                let req = new Request("/machine/veth/add", {
+                    method: "post",
+                    body: params
+                });
+                fetch(req)
+                .then(response =>{
+                    return response.json();
+                }).then(json => {
+                    if (json.status == 0){
+                        inUseVeths.push(new Veth(json.id, current_select_port.id, id));
+                    }
+                    Stdout(json.log);
+                });
+            }
+
+            function connectPort(port_id){
+                inUsePorts.forEach(function(port){
+                    if (port.id == port_id)
+                        current_select_port = port;
+                });
+                console.log(current_select_port.id);
                 vethDrawing = true;
+                contextMenu.classList.remove('show');
             }
 
 
@@ -356,6 +383,12 @@
                 this.number = number;
                 this.ip_address = ip_address;
                 this.mac_address = mac_address;
+            }
+
+            function Veth(id, port1_id, port2_id){
+                this.id = id;
+                this.port1_id = port1_id;
+                this.port2_id = port2_id;
             }
 
 
@@ -385,7 +418,7 @@
              * @param {string} str 追記する出力文字
              */
             function Stdout(str){
-                log.insertAdjacentHTML('beforeend', '<p>' + str + '</p>');
+                log.insertAdjacentHTML('beforeend', str + '<br>');
             }
 
             /**
