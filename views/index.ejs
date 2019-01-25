@@ -238,6 +238,16 @@
              */
             function canvasReDraw(){
                 context.clearRect(0, 0, canvas.width, canvas.height);
+                inUseVeths.forEach(function(veth){
+                    const port1_machine_id = inUsePorts.filter(port => port.id == veth.port1_id)[0].machine_id;
+                    const machine1 = inUseMachines.filter(machine => machine.id == port1_machine_id)[0];
+                    const port2_machine_id = inUsePorts.filter(port => port.id == veth.port2_id)[0].machine_id;
+                    const machine2 = inUseMachines.filter(machine => machine.id == port2_machine_id)[0];
+                    context.beginPath();
+                    context.moveTo(machine1.x+machine1.img.naturalWidth/2, machine1.y+machine1.img.naturalHeight/2);
+                    context.lineTo(machine2.x+machine2.img.naturalWidth/2, machine2.y+machine2.img.naturalHeight/2);
+                    context.stroke();
+                });
                 inUseMachines.forEach(function(machine){
                     context.drawImage(machine.img, machine.x, machine.y);
                 });
@@ -356,6 +366,7 @@
             }
 
             function connectPort(port_id){
+                wait_select_port = false;
                 inUsePorts.forEach(function(port){
                     if (port.id == port_id)
                         current_select_port = port;
