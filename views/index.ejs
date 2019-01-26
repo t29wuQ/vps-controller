@@ -251,6 +251,7 @@
                 inUseMachines.forEach(function(machine){
                     context.drawImage(machine.img, machine.x, machine.y);
                 });
+                saveTopology();
             }
 
             //ここからcanvas上のイベント登録
@@ -411,27 +412,6 @@
                 this.port2_id = port2_id;
             }
 
-
-            /**
-             * 指定されたurlにPOSTする
-             * POST後ログエリアに結果を表示
-             * @param {string} url url
-             * @param {URLSearchParams} 送信データ
-             */
-            function PostRequest(url, params){
-                let req = new Request(url, {
-                    method: "post",
-                    body: params
-                });
-                fetch(req)
-                .then(response =>{
-                    return response.json();
-                }).then(json => {
-                    new Machine
-                    Stdout(json.log);
-                });
-            }
-            
             const log = document.getElementById("log");
             /**
              * ログエリアにログを追記する
@@ -447,6 +427,32 @@
              */
             function Stderr(str){
 
+            }
+
+
+            function startTimer(){
+                setTimeout(saveTopology(), 1000); //1秒ごとに各機器の座標をpostし保存する
+            }
+            
+
+            function saveTopology(){
+                const machine_coordinate = [];
+                inUseMachines.forEach(machine => {
+                    machine_coordinate.push({id: machine.id, x: machine.x, y: machine.y});
+                });
+                const header = new Headers();
+                header.append('Content-Type', 'application/json');
+                let req = new Request("/machine/save", {
+                    method: "post",
+                    headers: header,
+                    body: JSON.stringify({coordinate: machine_coordinate})
+                });
+                fetch(req)
+                .then(response =>{
+                    return response.json();
+                }).then(json => {
+                    console.log(json.log);
+                });
             }
 
             /**

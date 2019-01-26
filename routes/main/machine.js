@@ -279,4 +279,29 @@ router.get('/load', async function(req, res){
     }
 });
 
+
+router.post('/save', async function(req, res){
+    try{
+        const user_id_search = await queryExec("select login_id, user_id from user where login_id='"+req.session.login_id+"';");
+        const user_id = user_id_search[0].user_id;
+        const get_machine = await queryExec("select open_id, user_id, x, y from machine where user_id='"+user_id+"';");
+        const update_coordinate = req.body.coordinate;
+        for (let i = 0;i < get_machine.length;i++){
+            for (let j = 0 ;j < update_coordinate.length;j++){
+                if (update_coordinate[j].id == get_machine[i].open_id){
+                    await queryExec("update machine set x="+update_coordinate[i].x+", y="+update_coordinate[i].y+" where open_id='"+get_machine[i].open_id+"';");
+                    continue;
+                }
+            }
+        }
+        res.json({
+            status: 0,
+            log: "save"
+        });
+    } catch(error){
+        console.log(error);
+        res.json(getErrorJson(error));
+    }
+});
+
 module.exports = router;
