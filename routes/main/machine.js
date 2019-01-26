@@ -159,8 +159,8 @@ router.post('/port/add', async function(req,res){
         const port_sum_search = await queryExec("select machine_id from port where machine_id='"+req.body.id+"';");
         const open_number = port_sum_search.length;
         open_id = "port_"+new Date().toFormat("YYYYMMDDHH24MISS");
-        await queryExec("insert into port (open_id, machine_id, open_number) values ('"
-                        +open_id+"','"+req.body.id+"','"+open_number+"');");
+        await queryExec("insert into port (open_id, user_id, machine_id, open_number) values ('"
+                        +open_id+"','"+user_id+"','"+req.body.id+"','"+open_number+"');");
         res.json({
             status: 0,
             id: open_id,
@@ -228,8 +228,8 @@ router.post('/veth/add', async function(req, res){
             }
             await queryExec("update port set name='"+machine_list[i].port_name+"' where open_id='"+machine_list[i].port_id+"';");
         }
-        await queryExec("insert into veth (open_id, port1, port2) values ('"
-                        +open_id+"','"+machine_list[0].port_id+"','"+machine_list[1].port_id+"');");
+        await queryExec("insert into veth (open_id, user_id, port1, port2) values ('"
+                        +open_id+"','"+user_id+"','"+machine_list[0].port_id+"','"+machine_list[1].port_id+"');");
         res.json({
             status: 0,
             id: open_id,
@@ -244,6 +244,39 @@ router.post('/veth/add', async function(req, res){
 //vethの削除
 router.post('/veth/del', function(req, res){
 
+});
+
+/**
+ * ユーザーの機器ポートvethを全て読み込み返す
+ */
+router.get('/load', async function(req, res){
+    try{
+        const user_id_search = await queryExec("select login_id, user_id from user where login_id='"+req.session.login_id+"';");
+        const user_id = user_id_search[0].user_id;
+        const get_machine = await queryExec("select open_id, user_id, display_name, description, type, x, y from machine where user_id='"+user_id+"';");
+        const get_port = await queryExec("select open_id, user_id, machine_id, open_number, ip_address, mac_address from port where user_id='"+user_id+"';");
+        const get_veth = await queryExec("select open_id, user_id, port1, port2 from veth where user_id='"+user_id+"';");
+        const machine_json = []
+        const port_json = []
+        const veth_json = []
+        get_machine.forEach(machine => {
+            machine_json.push({id: machine.open_id, name: machine.display_name, description: machine.description, type: machine.type, x: machine.x, y: machine.y});
+        });
+        get_port.forEach(port => {
+            port_json.push({id: port.open_id, machine_id: port.machine_id, number: port.open_number, ip_address: port.ip_address, mac_address: port.mac_address})
+        });
+        get_veth.forEach(veth => {
+            veth_json.push({id: veth.open_id, port1: veth.port1, port2: veth.port2});
+        });
+        res.json({
+            machine: machine_json,
+            port: port_json,
+            veth: veth_json
+        });
+    } catch(error){
+        console.log(error);
+        res.json(getErrorJson(error));
+    }
 });
 
 module.exports = router;

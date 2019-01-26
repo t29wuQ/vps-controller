@@ -325,6 +325,10 @@
             });
             //コンテキストメニューここまで
             
+            /**
+             * ポートを追加
+             * @param id 機器ID
+             */
             function addPort(id){
                 let params = new URLSearchParams();
                 params.append("id", id);
@@ -344,9 +348,11 @@
 
             }
 
+            /**
+             * vethを追加
+             * @param id 終端のポートID(始点ポートのIDはcurrent_select_port.idから取得))
+             */
             function addVeth(id){
-                console.log(current_select_port);
-                console.log(id);
                 let params = new URLSearchParams();
                 params.append("port1", current_select_port.id);
                 params.append("port2", id);
@@ -365,6 +371,9 @@
                 });
             }
 
+            /**
+             * 
+             */
             function connectPort(port_id){
                 wait_select_port = false;
                 inUsePorts.forEach(function(port){
@@ -439,6 +448,45 @@
             function Stderr(str){
 
             }
+
+            /**
+             * トポロジの再読込を行う
+             */
+            function reloadTopology(){
+                inUseMachines = [];
+                inUsePorts = [];
+                inUseVeths = [];
+                let req = new Request("/machine/load", {
+                    method: "get",
+                });
+                fetch(req)
+                .then(response =>{
+                    return response.json();
+                }).then(json => {
+                    json.machine.forEach(machine => {
+                        let img = new Image();
+                        if (machine.type== "router")
+                            img.src = ROUTER_SRC;
+                        else if (machine.type == "switch")
+                            img.src = SWITCH_SRC;
+                        else if (machine.type == "vps")
+                            img.src = VM_SRC;
+                        inUseMachines.push(new Machine(img, machine.id, machine.name, machine.description, machine.type, machine.x, machine.y));
+                    });
+                    json.port.forEach(port => {
+                        inUsePorts.push(new Port(port.id, port.machine_id, port.number, port.ip_address, port.mac_address));
+                    });
+                    json.veth.forEach(veth => {
+                        inUseVeths.push(new Veth(veth.id, veth.port1, veth.port2));
+                    });
+                    canvasReDraw();
+                    Stdout(json.log);
+                });
+            }
+
+            window.onload = function(){
+                reloadTopology();
+            };
         </script>
     </body>
 </html>
