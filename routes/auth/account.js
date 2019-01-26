@@ -72,4 +72,9 @@ router.post('/signin', async function(req, res){
     }
 });
 
+router.get('/logout', function(req, res){
+    req.session.destroy();
+    res.redirect('/');
+});
+
 module.exports = router;
