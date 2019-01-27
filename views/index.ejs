@@ -214,6 +214,7 @@
              */
             function handleCanvasOnUp(e){
                 canvasDragging = false;
+                saveTopology();
             }
 
             function handleCanvasDoubleClick(e){
@@ -251,7 +252,6 @@
                 inUseMachines.forEach(function(machine){
                     context.drawImage(machine.img, machine.x, machine.y);
                 });
-                saveTopology();
             }
 
             //ここからcanvas上のイベント登録
